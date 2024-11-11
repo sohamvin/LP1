@@ -1,3 +1,6 @@
+import os
+
+
 class Pass1:
     def __init__(self):
 
@@ -28,7 +31,7 @@ class Pass1:
 
         ]
 
-        self.fileName = "two"
+        self.fileName = "one"
 
         self.CurrentMacroName = ""
 
@@ -83,7 +86,8 @@ class Pass1:
         return i+1
     
     def StoreTablesInFile(self):
-        with open(self.fileName + "MNT" + ".txt", "w") as file:
+        os.makedirs(self.fileName, exist_ok=True)
+        with open(f"{self.fileName}/" + self.fileName + "MNT" + ".txt", "w") as file:
             for key, val in self.MNT.items():
                 file.write(key + ":")
                 for ele in val:
@@ -92,7 +96,7 @@ class Pass1:
 
             file.close()
 
-        with open(self.fileName + "PNTAB" + ".txt", "w") as file:
+        with open(f"{self.fileName}/" +self.fileName + "PNTAB" + ".txt", "w") as file:
             for key, val in self.PNTabs.items():
                 file.write(key + ":")
                 for ele in val:
@@ -100,14 +104,14 @@ class Pass1:
                 file.write("\n")
             file.close()
 
-        with open(self.fileName + "MDT" + ".txt", "w") as file:
+        with open(f"{self.fileName}/" +self.fileName + "MDT" + ".txt", "w") as file:
             for array in self.MDT:
                 for ele in array:
                     file.write(ele + ";")
                 file.write("\n")
             file.close()
 
-        with open(self.fileName + "KPDTAB" + ".txt", "w") as file:
+        with open(f"{self.fileName}/" +self.fileName + "KPDTAB" + ".txt", "w") as file:
             for array in self.KPDTab:
                 file.write(array[0] + ":" + array[1])
                 file.write("\n")

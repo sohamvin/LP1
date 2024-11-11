@@ -1,9 +1,12 @@
+import os
+
+
 class PassTwo:
     def __init__(self):
 
         self.filename = "one"
 
-        self.Adjective = "pass2.txt"
+        self.Adjective = "Pass2.txt"
 
         self.PNTab = {
             #Macro name : [parameters]
@@ -123,28 +126,38 @@ class PassTwo:
 
 
     def PrintDataStructres(self):
-        print("PNTAB")
-        for key, val in self.PNTab.items():
-            print(key, " : ", val)
+        # print("PNTAB")
+        # for key, val in self.PNTab.items():
+        #     print(key, " : ", val)
         
 
-        print("\n\n\nMNTab")
-        for key, val in self.MNT.items():
-            print(key, " : ", val)
+        # print("\n\n\nMNTab")
+        # for key, val in self.MNT.items():
+        #     print(key, " : ", val)
 
 
-        print("\n\n\nKPDTab")
-        for ele in self.KPDTab:
-            print(ele)
+        # print("\n\n\nKPDTab")
+        # for ele in self.KPDTab:
+        #     print(ele)
 
-        print("\n\n\nLines Read From Pass2")
+        # print("\n\n\nLines Read From Pass2")
+        # for ele in self.ReadPassTwoLines:
+        #     print(ele)
+
+        # print("\n\n\n\n\nMacro Defination Table")
+        # for ele in self.MDT:
+        #     print(ele)
+
+        print("\n\n\n\n\n\nLines Read")
         for ele in self.ReadPassTwoLines:
             print(ele)
 
-        print("\n\n\n\n\nMacro Defination Table")
-        for ele in self.MDT:
-            print(ele)
-    
+        print("\n\n\n\n\n\nExpanded Code")
+        for ele in self.MacroExpandedCode:
+            print(ele) 
+
+
+
 
     def IfMacroCall(self, line):
         if len(line) < 1:
@@ -152,12 +165,41 @@ class PassTwo:
         if line[0] in self.MNT:
             return True
         return False
+    
+
 
     def ProduceCodeForAPTabAndMacro(self, macroname, APtab):
         ParameterToPosition = {
 
         }
+
+        for j, param in enumerate(self.PNTab[macroname]):
+            ParameterToPosition[j] = param # position -> name maping
+
         
+        MDTForMacro = []
+
+        for i in range(self.MNT[macroname][2], len(self.MDT)):
+            if "MEND" in self.MDT[i]:
+                break
+            line = []
+            for ele in self.MDT[i]:
+                if "(" in ele:
+                    position = ele.strip("(").strip(")").split(",")[1]
+                    if position.isdigit():
+                        position = int(position)
+                        line.append(APtab[ParameterToPosition[position]])
+                    else:
+                        print("WRONG CODE,", position)
+                        return -1
+                else:
+                    line.append(ele)
+        
+            MDTForMacro.append(line)
+
+        return MDTForMacro
+        
+
 
     def DoStuff(self):
         self.ReadFiles()
@@ -171,36 +213,38 @@ class PassTwo:
                 print(f"{line[0]} : {aptab}\n\n\n")
                 if num == -1:
                     return
-                # self.MacroExpandedCode += self.ProduceCodeForAPTabAndMacro(macroname=line[0], APtab=aptab)
+                self.MacroExpandedCode += self.ProduceCodeForAPTabAndMacro(macroname=line[0], APtab=aptab)
                     
             else:
                 self.MacroExpandedCode.append(line)
+
+        self.WriteExpandedCodeToFile()
                 
             
 
 
 
     def ReadFiles(self):
-        with open(self.filename + "KPDTAB" + ".txt", "r") as file:
+        with open(f"{self.filename}/" +self.filename + "KPDTAB" + ".txt", "r") as file:
             for line in file:
                 l = [line.split(":")[0], line.split(":")[1].strip("\n")]
                 self.KPDTab.append(l)
             file.close()
 
-        with open(self.filename + "MDT" + ".txt", "r") as file:
+        with open(f"{self.filename}/" +self.filename + "MDT" + ".txt", "r") as file:
             for line in file:
                 l = [part.strip("\n") for part in line.split(";") if part.strip() != '']
                 self.MDT.append(l)
             file.close()
 
-        with open(self.filename + "MNT" + ".txt", "r") as file:
+        with open(f"{self.filename}/" +self.filename + "MNT" + ".txt", "r") as file:
             for line in file:
                 l = line.split(":")
                 self.MNT[l[0].strip()] = [int(ele.strip()) for ele in l[1].split(",") if ele.strip() != '']
             file.close()
 
 
-        with open(self.filename + "PNTAB" + ".txt", "r") as file:
+        with open(f"{self.filename}/" +self.filename + "PNTAB" + ".txt", "r") as file:
             for line in file:
                 l = line.split(":")
                 self.PNTab[l[0].strip("\n").strip()] = [ele.strip("\n").strip() for ele in l[1].split(",") if ele.strip() != '']
@@ -208,10 +252,24 @@ class PassTwo:
 
         with open(self.filename + self.Adjective, "r") as file:
             for line in file:
-                l = [ele.strip().strip("\n").strip(",") for ele in line.split(" ") ]
+                l = [ele.strip().strip("\n").strip(",") for ele in line.split(" ") if ele.strip().strip("\n").strip(",") != '']
                 if l != ['']:
                     self.ReadPassTwoLines.append(l)
 
+            file.close()
+
+
+    
+    def WriteExpandedCodeToFile(self):
+        os.makedirs(self.filename, exist_ok=True)
+        
+        with open(f"{self.filename}/" + self.filename + "PassTwoExpansion" + ".txt", "w") as file:
+            for line in self.MacroExpandedCode:
+                for word in line:
+                    file.write(word)
+                    file.write("\t")
+                file.write("\n")
+            
             file.close()
 
 
