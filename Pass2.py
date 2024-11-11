@@ -60,6 +60,67 @@ class PassTwo:
         ] # read the actual lines like: M1 10, 20, &B=CREG // or -- M2 100, 200, &V=AREG, &U=BREG 
         #to analyze them
 
+    def GenerateAPTab(self, macro_call_line):
+
+        '''
+         it is safe to assume that the assembler's pass 1 enforces 
+         this rule and blocks or flags any incorrect ordering in macro 
+         definitions, ensuring that positional parameters come before 
+         keyword parameters. 
+         And we assme that is how they are stored as well in 
+         PNTab 
+        '''
+
+        macroname = macro_call_line[0]
+
+        if macroname not in self.PNTab or macroname not in self.MNT:
+            print(f"WRONG CODE, no such Macro as {macroname}")
+            return -1, {}
+        
+        KPTPointer, numberOfKP, numberOfPP = self.MNT[macroname][3], self.MNT[macroname][1], self.MNT[macroname][0]
+
+        KeywordParams = {
+            
+        }
+        if KPTPointer != -1:
+            for i in range(KPTPointer, KPTPointer+ numberOfKP):
+                KeywordParams[self.KPDTab[i][0]] = self.KPDTab[i][1]
+
+        parameters = self.PNTab[macroname]
+
+        APTab = {
+
+        }
+        ArgsGiven = macro_call_line[1:]
+
+        if len(ArgsGiven) > len(parameters) or len(ArgsGiven) < numberOfPP:
+            print("WRONG CODE, Wrong number of positional parameters")
+            return -1, {}
+
+
+        for j in range(len(ArgsGiven)):
+            if "=" in ArgsGiven[j]:
+                parts = ArgsGiven[j].split("=")
+                if parts[0] not in KeywordParams:
+                    print("WRONG CODE, No such keyword param ", parts[0])
+                    return -1, {}
+                else:
+                    APTab[parts[0]] = parts[1]
+            else:
+                APTab[parameters[j]] = ArgsGiven[j]    
+
+        #Finish of remaining keyword parameters missed in loop
+
+        for key, val in KeywordParams.items():
+            if key not in APTab:
+                if val == '':
+                    print("WRONG ARGUMENT PASSING, ", key, " Keyword argument wasnt initialized")
+                    return -1, {}
+                else:
+                    APTab[key] = val
+        
+        return 0, APTab
+
 
     def PrintDataStructres(self):
         print("PNTAB")
@@ -85,8 +146,38 @@ class PassTwo:
             print(ele)
     
 
+    def IfMacroCall(self, line):
+        if len(line) < 1:
+            return False
+        if line[0] in self.MNT:
+            return True
+        return False
+
+    def ProduceCodeForAPTabAndMacro(self, macroname, APtab):
+        ParameterToPosition = {
+
+        }
+        
+
     def DoStuff(self):
         self.ReadFiles()
+
+        for line in self.ReadPassTwoLines:
+
+            if self.IfMacroCall(line=line):
+
+                num, aptab = self.GenerateAPTab(line)
+
+                print(f"{line[0]} : {aptab}\n\n\n")
+                if num == -1:
+                    return
+                # self.MacroExpandedCode += self.ProduceCodeForAPTabAndMacro(macroname=line[0], APtab=aptab)
+                    
+            else:
+                self.MacroExpandedCode.append(line)
+                
+            
+
 
 
     def ReadFiles(self):
