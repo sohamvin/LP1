@@ -1,8 +1,8 @@
-
+import os
 
 class PassTwo:
     def __init__(self):
-        self.fileName = "two"
+        self.fileName = "three"
 
         self.LiteralTable = [
 
@@ -27,17 +27,17 @@ class PassTwo:
     
 
     def processFiles(self):
-        with open(self.fileName + "Literal" + ".txt", "r") as file:
+        with open(f"{self.fileName}/" +self.fileName + "Literal" + ".txt", "r") as file:
             for line in file:
                 self.LiteralTable.append([int(el.strip("\n")) for i,el in enumerate(line.split(":")) if i != 1])
             file.close()
 
-        with open(self.fileName + "ICCode" + ".txt" , "r") as file:
+        with open(f"{self.fileName}/" +self.fileName + "ICCode" + ".txt" , "r") as file:
             for line in file:
                 self.IntermediateCode.append([el.strip("\n") for el in line.split(":") if el.strip("\n") ])
             file.close()
 
-        with open(self.fileName + "Symbole" + ".txt", "r") as file:
+        with open(f"{self.fileName}/" +self.fileName + "Symbole" + ".txt", "r") as file:
             for line in file:
                 self.SymboleTab.append([int(el.strip("\n")) for i,el in enumerate(line.split(":")) if el.strip("\n") and i != 1])
         
@@ -51,7 +51,7 @@ class PassTwo:
 
         self.LastProcess()
 
-        with open(self.fileName + "Pass2" + ".txt", "w") as file:
+        with open(f"{self.fileName}/" +self.fileName + "Pass2" + ".txt", "w") as file:
             for line in self.finalCode:
                 file.write(f"{line[0]}:{line[1]}:{line[2]}:{line[3]}\n")
             
@@ -179,16 +179,3 @@ p2 = PassTwo()
 p2.processFiles()
 p2.PrintTabs()
 
-# lines = [
-
-# ]
-# with open("threeSymbole.txt", "r") as file:
-#     for line in file:
-#         l = [int(el.strip("\n")) for i,el in enumerate(line.split(":")) if el.strip("\n") and i != 1]
-#         print(l)
-#         lines.append(line)
-
-
-
-# for l in 
-# print(lines)

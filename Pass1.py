@@ -1,12 +1,12 @@
 # Open and read the file line by line
     
-
+import os
 
 class PassOne:
 
     def __init__(self):
         
-        self.fileName = "three"
+        self.fileName = "two"
 
         self.lines = [
 
@@ -104,7 +104,9 @@ class PassOne:
 
     def GenerateStrForCommand(self,CommandStr) -> str:
         return "(" + self.Commands[CommandStr][0] + "," + str(self.Commands[CommandStr][1]) + ")"
-    # def GenerateStrForLiteral(mystr) -> str:
+
+
+
         
     def GenerateStrForSymbole(self,symbole) -> str:
         sr = "(" + "S" + ","
@@ -353,21 +355,23 @@ class PassOne:
             self.ProcessAndInterMediateCode(line_parts=line_parts)
 
     def StoreTables(self):
-        with open(self.fileName + "Symbole" + ".txt", "w") as file:
+        os.makedirs(self.fileName, exist_ok=True)
+
+        with open(f"{self.fileName}/" +self.fileName + "Symbole" + ".txt", "w") as file:
             for i, (key, val) in enumerate(self.symbolTable.items()):
                 # Write index, key, and value to file
                 file.write(f"{i}:{key}:{str(val)}\n")
         
             file.close()
         
-        with open(self.fileName + "Literal" + ".txt", "w") as file:
+        with open(f"{self.fileName}/" +self.fileName + "Literal" + ".txt", "w") as file:
             for i, ele in enumerate(self.literalTable):
                 file.write(f"{i}:{str(ele[0])}:{str(ele[1])}\n")
             
             file.close()
 
         
-        with open(self.fileName + "ICCode" + ".txt", "w") as file:
+        with open(f"{self.fileName}/" +self.fileName + "ICCode" + ".txt", "w") as file:
             for element in self.InterMediateCode:
                 for ele in element:
                     file.write(f"{ele}:")
