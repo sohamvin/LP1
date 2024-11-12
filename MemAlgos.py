@@ -60,14 +60,78 @@ class BestFit():
 
 
 
-
-
 class NextFit():
+    #best fit after last insertion
     def __init__(self):
-        self.processMap = {}
+        self.processMap = {} # name : [startIndex in memory, size]
         self.memory = [ "*" for _ in range(size) ]
+        self.LastIndexAllocation = 0 #initially we start from 0th index
     def insert(self, letter, sz):
-        pass
+
+        #Two loops, from last index to end
+        #and from 0 to last index.
+
+        StartLocToSize = {
+
+        }
+
+        #store findngs in this array
+        #then place the next fit guy bext place among this
+
+        freeSpaceCounter = 0
+        startOf = -1
+
+        for i in range(self.LastIndexAllocation, len(self.memory)):
+            if self.memory[i] == "*":
+                if freeSpaceCounter == 0:
+                    startOf = i    
+                freeSpaceCounter += 1
+            
+            else:
+                if freeSpaceCounter != 0:
+                    if startOf != -1:
+                        StartLocToSize[startOf] = freeSpaceCounter
+                startOf, freeSpaceCounter = -1, 0
+                i += self.processMap[self.memory[i]][1]-1 # cuz for loop also adds 1
+        
+
+        
+
+        if freeSpaceCounter >= sz:
+            StartLocToSize[startOf] = freeSpaceCounter
+
+        idx = -1
+        size = float("inf")
+        
+        for key, val in StartLocToSize.items():
+            if val < size:
+                size = val
+                idx = key
+
+        
+        if idx == -1:
+            if "*" not in self.memory[self.LastIndexAllocation:len(self.memory)]:
+                # so there is no possible way to have any process being in that memory range
+                self.LastIndexAllocation = 0 # start again from 0 
+
+            #No suitable space was found
+            return None
+        else:
+            self.LastIndexAllocation = idx + sz
+
+            self.processMap[letter] = [idx, sz]
+            self.memory[idx : idx + sz] = [letter for _ in range(sz)]
+
+            if "*" not in self.memory[self.LastIndexAllocation:]:
+                # so there is no possible way to have any process being in that memory range
+                self.LastIndexAllocation = 0 # start again from 0 
+
+            return idx
+
+
+    def getLastIndex(self):
+        return self.LastIndexAllocation
+        
     def mapOfProcesses(self):
         return self.processMap
     def printArray(self):
@@ -77,13 +141,18 @@ class NextFit():
             return True
         return False
     def removeProcess(self, letter):
-        pass
+        sz = self.processMap[letter][1]
+        # Find the starting index of the process to remove
+        startIndex = self.processMap[letter][0]
+        self.memory[startIndex:startIndex + sz] = ["*" for _ in range(sz)]  # Free memory
+        del self.processMap[letter]  # Remove from process map
 
 
 class FirstFit():
     def __init__(self):
         self.processMap = {}
         self.memory = [ "*" for _ in range(size) ]
+
     def insert(self, letter, sz):
 
         tempMap = {}
