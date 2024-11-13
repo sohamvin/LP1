@@ -64,6 +64,7 @@ class PassOne:
 
 
 
+#Helper functions
     def strIsLiteral(self, a):
         if "=" in a:
             return True
@@ -72,40 +73,16 @@ class PassOne:
     def extractLiteral(self, literalstr):
         if self.strIsLiteral(literalstr):
 
-            literalstr = literalstr.strip("=")
+            literalstr = literalstr.strip("=")  # as literal looks like:   (  ='5'  )
             literalstr = literalstr.strip("'")
             if literalstr.isdigit():
                 return literalstr
             return "/0"
         else:
             return "/0"
-
-    def AnylyzeLiterals(self,line):
-        for a in line:
-            if self.strIsLiteral(a=a):  # Use 'in' to check for "=" in the string
-                self.literalTable.append([a, ""])
-                return True, len(self.literalTable)-1
-        return False, -1
-
-    def MakeSymbTable(self,line, LC):
-        for a in line:
-            if (not self.strIsLiteral(a)) and  (a not in self.Commands) and ( not a.isdigit()) and ("ORIGIN" not in line) and ( "'" not in a) and ("+" not in a) and ("-" not in a):
-                # it is symbole
-                # print("WINGARDIUM LEVIOSARRR", (a in self.symbolTable), a)
-                if (a not in self.symbolTable) and (line[0] != a):
-                    self.symbolTable[a] = ""
-                elif (a not in self.symbolTable)  and (line[0] == a):
-                    # print("ABRAKADABRA", a)
-                    self.symbolTable[a] = LC
-                elif (self.symbolTable[a] == "") and (line[0] == a):
-                    self.symbolTable[a] = LC
-
-
-
+        
     def GenerateStrForCommand(self,CommandStr) -> str:
         return "(" + self.Commands[CommandStr][0] + "," + str(self.Commands[CommandStr][1]) + ")"
-
-
 
         
     def GenerateStrForSymbole(self,symbole) -> str:
@@ -119,6 +96,64 @@ class PassOne:
         return sr
 
 
+    def resolveSymbolOrConstant(self, value):
+        """
+        Resolves value from self.symbolTable or converts it to integer if it's a digit.
+        Returns tuple (nextS, num) where:
+            - nextS: Intermediate code string for the symbol or constant
+            - num: Integer value of the symbol or constant
+        """
+        if value in self.symbolTable and self.symbolTable[value] != "":
+            # Symbol exists and is defined
+            for i, key in enumerate(self.symbolTable.keys()):
+                if value == key:
+                    return f"(S,{i})", self.symbolTable[value]
+        elif value.isdigit():
+            # Value is a digit
+            return value, int(value)
+        # If symbol is undefined or invalid
+        return None, -1  
+
+
+
+
+
+
+
+
+#Append Functions(Appending symboles to symbole table and literals to literal table also assigning LC values if we can do that)
+    def ProcessLiteral(self,line):
+        for a in line:
+            if self.strIsLiteral(a=a):  # Use 'in' to check for "=" in the string
+                self.literalTable.append([a, ""])
+                return True, len(self.literalTable)-1
+        return False, -1
+
+    def MakeSymbTable(self,line, LC):
+        for a in line:
+            if (not self.strIsLiteral(a)) and  (a not in self.Commands) and ( not a.isdigit()) and ("ORIGIN" not in line) and ( "'" not in a) and ("+" not in a) and ("-" not in a): 
+                #If neither of above conditions are fullfilled then [a] can only be a symble.  it is not a command
+                #not a literal
+                #not ORIGIN
+                #doesnt have '' / + / - in it so not constant like '1' or an expression like LABEL1-3 or LABEL2+3 used in things like ORIGIN LABEL1+3 
+                if (a not in self.symbolTable) and (line[0] != a):
+                    self.symbolTable[a] = ""
+                elif (a not in self.symbolTable)  and (line[0] == a):
+                    # print("ABRAKADABRA", a)
+                    self.symbolTable[a] = LC
+                elif (self.symbolTable[a] == "") and (line[0] == a):
+                    self.symbolTable[a] = LC
+
+
+
+
+
+
+
+
+
+
+#Process Line
 
     def ProcessEQU(self,line_parts):
 
@@ -172,25 +207,6 @@ class PassOne:
 
 
 
-
-    def resolveSymbolOrConstant(self, value):
-        """
-        Resolves value from self.symbolTable or converts it to integer if it's a digit.
-        Returns tuple (nextS, num) where:
-            - nextS: Intermediate code string for the symbol or constant
-            - num: Integer value of the symbol or constant
-        """
-        if value in self.symbolTable and self.symbolTable[value] != "":
-            # Symbol exists and is defined
-            for i, key in enumerate(self.symbolTable.keys()):
-                if value == key:
-                    return f"(S,{i})", self.symbolTable[value]
-        elif value.isdigit():
-            # Value is a digit
-            return value, int(value)
-        # If symbol is undefined or invalid
-        return None, -1
-
     def ifOrigin(self, line):
         ICCode = []
         nextS = ""
@@ -237,32 +253,31 @@ class PassOne:
         self.InterMediateCode.append(ICCode)
 
 
+
     def ProcessENDOrLTORG(self,line_parts):
 
 
         if "END" in line_parts:
             self.InterMediateCode.append([self.GenerateStrForCommand("END"), -1]) # insert -1 for saying No LC 
 
-        
-
         for i, a in enumerate(self.literalTable):
             ICCode = []
             if a[1] == "":
-                ICCode.append(self.GenerateStrForCommand("DC"))
-                a[1] = self.LC
+                ICCode.append(self.GenerateStrForCommand("DC")) # unprocessed literals are appended as DC literal statements
+                a[1] = self.LC # LC for the literal becomes this
                 self.LC += 1
                 getNumFromLiteral = self.extractLiteral(a[0])
                 if getNumFromLiteral != "/0":
-                    ICCode.append("(" + "C" + "," + getNumFromLiteral + ")")
+                    ICCode.append("(" + "C" + "," + getNumFromLiteral + ")") # IC for literal DC statements , literals are treated as constants
                     ICCode.append(a[1]) # Append Value Of LC
                 else:
-                    print("WRONG CODE LUTERAL")
+                    print("WRONG CODE LITERAL")
                     return
             if ICCode:
                 self.InterMediateCode.append(ICCode)
 
 
-
+    #I.E. no EQU, ORIGIN, END, LTORG, START statement -> then do this 
     def SimpleProcessing(self, line_parts, literalThere, pos):
         ICCode = []
 
@@ -275,30 +290,37 @@ class PassOne:
                     ICCode.append(self.GenerateStrForSymbole(a))
                     
             elif self.strIsLiteral(a):
-                if literalThere:
-                    ICCode.append("(" + "L" + "," + str(pos) + ")")
+                if literalThere: #if there is indeed a literal in this line: 
+                    ICCode.append("(" + "L" + "," + str(pos) + ")") # pos is position of the literal in the literal table
                 else:
                     print("WRONG CODE AS IT SEEMS THAT THERE WAS NO LITERAL FOUND")
+                    return 
                 
             elif a in self.Commands:
                 ICCode.append(self.GenerateStrForCommand(a))
             else:
                 if a.isdigit():
-                    ICCode.append("(" + "C" + "," + a + ")")
-                elif a.strip("'").isdigit():
+                    ICCode.append("(" + "C" + "," + a + ")") # Append constants as constnats 
+                elif a.strip("'").isdigit():  # Sometimes in DC Statments constants are written like '5' / '1' so thats why this line
                     ICCode.append("(" + "C" + "," + a.strip("'") + ")")
         
-        ICCode.append(self.LC) # Append Val of LC
+        ICCode.append(self.LC) # Append Val of LC for that line -> line_parts
         self.LC += 1
         self.InterMediateCode.append(ICCode)
 
+
+    #If it is a DS statement, we dont increment LC by 1 but rather 
+    #By however much like: 
+    #LABEL1 DS 3
+    #Then LC += 3
+    #And in Intermediate code, LABEL1 Intermediate code is not generated
     def ProcessDS(self, line_parts):
         ICCode  = []
         # if line_parts[0] in self.symbolTable:
         #     ICCode.append(self.GenerateStrForSymbole(line_parts[0]))
-        if line_parts[1] in self.Commands:
+        if line_parts[1] in self.Commands: # If the 2nd [1st index position] is indeed in Commands(is  DS) then add that
             ICCode.append(self.GenerateStrForCommand(line_parts[1]))
-        if line_parts[2].isdigit():
+        if line_parts[2].isdigit(): # Process the 3 / whatever constant
             ICCode.append("(" + "C" + "," + line_parts[2] + ")")
             ICCode.append(str(self.LC))
             self.LC += int(line_parts[2])
@@ -308,10 +330,10 @@ class PassOne:
         
 
 
-
+    #Redirect to Approriate line processing function
     def ProcessAndInterMediateCode(self,line_parts):
 
-        print(line_parts, self.LC)
+        # print(line_parts, self.LC)
 
         if "START" in line_parts:
             self.LC = int(line_parts[1])
@@ -324,7 +346,7 @@ class PassOne:
         
         #First Make Symboles
         self.MakeSymbTable(line_parts, LC=self.LC)
-        literalThere, position = self.AnylyzeLiterals(line=line_parts)
+        literalThere, position = self.ProcessLiteral(line=line_parts)
         
         if "EQU" in line_parts:
             self.ProcessEQU(line_parts=line_parts)
@@ -342,6 +364,26 @@ class PassOne:
             self.SimpleProcessing(line_parts, literalThere=literalThere, pos=position)
             
 
+
+
+
+
+
+
+#Simply goes line by line and processes each line 
+    def goThroughLineByLine(self):
+        for line_parts in self.lines:
+            self.ProcessAndInterMediateCode(line_parts=line_parts)
+
+
+
+
+
+
+
+
+
+#File Processing functions
     def ProcessFile(self) :
         with open(self.fileName + ".txt", 'r') as file:
             for line in file:
@@ -349,10 +391,6 @@ class PassOne:
                 if line_parts:
                     self.lines.append(line_parts)
             
-
-    def goThroughLineByLine(self):
-        for line_parts in self.lines:
-            self.ProcessAndInterMediateCode(line_parts=line_parts)
 
     def StoreTables(self):
         os.makedirs(self.fileName, exist_ok=True)
@@ -380,7 +418,14 @@ class PassOne:
             file.close()
 
         
-    
+
+
+
+
+
+
+
+#Actual function to call
     def DoStuff(self):
         self.ProcessFile()
         self.goThroughLineByLine()
